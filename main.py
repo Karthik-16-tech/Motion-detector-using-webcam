@@ -14,9 +14,13 @@ count = 1
 
 def clean_folder():
     print("clean folder function started")
+    time.sleep(1)
     images = glob.glob("images/*.png")
     for image in images:
-        os.remove(image)
+        try:
+            os.remove(image)
+        except PermissionError as e:
+            print(f"Failed to delete {image}. ERROR: {str(e)}")
     print("clean folder function ended")
 
 
@@ -25,6 +29,7 @@ def clean_folder():
 while True:
     status = 0
     check, frame =video.read()
+
     gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2GRAY)
     gray_frame_gau = cv2.GaussianBlur(gray_frame,(21, 21),0)
 
@@ -57,13 +62,15 @@ while True:
     status_list = status_list[-2:]
 
     if status_list[0] == 1 and status_list[1] == 0:
-        email_thread = Thread(target=send_email,args=(image_with_object, ))
+        email_thread = Thread(target=send_email, args=(image_with_object, ))
         email_thread.daemon = True
-        clean_thread = Thread(target=clean_folder())
-        clean_thread.daemon = True
-
         email_thread.start()
+        email_thread.join()
+
+        clean_thread = Thread(target=clean_folder)
+        clean_thread.daemon = True
         clean_thread.start()
+
 
     print(status_list)
 
@@ -75,4 +82,3 @@ while True:
 
 video.release()
 
-clean_thread.start()
